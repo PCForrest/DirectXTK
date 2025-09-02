@@ -1,6 +1,9 @@
 project "DirectXTK"
 	kind "StaticLib"
 
+	include "premake5_atg_delete_shaders_for_directxtk.lua"
+	include "premake5_atg_ensure_shaders_for_directxtk.lua"
+
 	language "C++"
 	cppdialect "C++17"
 	staticruntime "Off"
@@ -47,10 +50,12 @@ project "DirectXTK"
 
 	dependson
 	{
+		-- Nil
 	}
 
 	links
 	{
+		-- Nil
 	}
 
 	defines
@@ -77,19 +82,17 @@ project "DirectXTK"
 		systemversion "latest"
 
 	filter "configurations:Debug"
-		defines
-		{
-			"_DEBUG",
-		}
-
+		defines	{ "_DEBUG",	}
 		runtime "Debug"
 		symbols "on"
 
-	filter { "configurations:Release", "configurations:Dist" }
-		defines
-		{
-			"NDEBUG",
-		}
+	filter "configurations:Release"
+		defines	{ "NDEBUG", }
+		runtime "Release"
+		optimize "on"
+
+	filter "configurations:Dist"
+		defines	{ "NDEBUG", }
 		runtime "Release"
 		optimize "on"
 
