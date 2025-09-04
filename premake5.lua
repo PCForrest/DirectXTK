@@ -1,16 +1,15 @@
 project "DirectXTK"
 	kind "StaticLib"
 
-	include "premake5_atg_delete_shaders_for_directxtk.lua"
-	include "premake5_atg_ensure_shaders_for_directxtk.lua"
+include "premake5.vstudio.vc2010.project.override.lua"
 
 	language "C++"
 	cppdialect "C++17"
 	staticruntime "Off"
 	location "%{wks.location}/Libs/Vendor/%{prj.name}"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir (bin_dir .. "/Libs/Vendor/%{prj.name}")
+	objdir (int_dir .. "/Libs/Vendor/%{prj.name}")
 
 	pchheader "pch.h"
 	pchsource "%{prj.location}/Src/pch.cpp"

@@ -31,3 +31,6 @@ packages
 /out
 /CMakeUserPresets.json
 /build/vcpkg_installed
+DirectXTK.vcxproj
+DirectXTK.vcxproj.filters
+DirectXTK.vcxproj.user
