@@ -13,7 +13,7 @@ project "DirectXTK"
 	objdir (int_dir .. "/Libs/Vendor/%{prj.name}")
 
 	pchheader "pch.h"
-	pchsource "%{prj.location}/Src/pch.cpp"
+	pchsource "Src/pch.cpp"
 
 	files
 	{
