@@ -1,12 +1,13 @@
+require('vstudio')
+
+local p = premake
+local m = p.vstudio.vc2010
+
 project "DirectXTK"
 	kind "StaticLib"
-
-include "premake5.vstudio.vc2010.project.override.lua"
-
 	language "C++"
 	cppdialect "C++17"
 	staticruntime "Off"
-	location "%{wks.location}/Libs/Vendor/%{prj.name}"
 
 	targetdir (bin_dir .. "/Libs/Vendor/%{prj.name}")
 	objdir (int_dir .. "/Libs/Vendor/%{prj.name}")
@@ -16,45 +17,45 @@ include "premake5.vstudio.vc2010.project.override.lua"
 
 	files
 	{
-		"%{prj.location}/premake5.lua",
-		"%{prj.location}/.editorconfig",
-		"%{prj.location}/Audio/*.h",
-		"%{prj.location}/Audio/*.cpp",
-		"%{prj.location}/Inc/*.h",
-		"%{prj.location}/Inc/*.inl",
-		"%{prj.location}/Src/*.h",
-		"%{prj.location}/Src/*.cpp",
-		"%{prj.location}/Src/Shaders/*.fx",
-		"%{prj.location}/Src/Shaders/*.fxh",
-		"%{prj.location}/Src/Shaders/*.hlsl",
-		"%{prj.location}/Src/Shaders/*.hlsli",
-		"%{prj.location}/Src/Shaders/*.cmd",
+		"premake5.lua",
+		".editorconfig",
+		"Audio/*.h",
+		"Audio/*.cpp",
+		"Inc/*.h",
+		"Inc/*.inl",
+		"Src/*.h",
+		"Src/*.cpp",
+		"Src/Shaders/*.fx",
+		"Src/Shaders/*.fxh",
+		"Src/Shaders/*.hlsl",
+		"Src/Shaders/*.hlsli",
+		"Src/Shaders/*.cmd",
 	}
 
 	removefiles
 	{
-		"%{prj.location}/premake5.lua",
-		"%{prj.location}/.editorconfig",
-		"%{prj.location}/Inc/XboxDDSTextureloader.h",
-		"%{prj.location}/Src/XboxDDSTextureloader.cpp",
+		"premake5.lua",
+		".editorconfig",
+		"Inc/XboxDDSTextureloader.h",
+		"Src/XboxDDSTextureloader.cpp",
 	}
 
 	includedirs
 	{
-		"%{prj.location}/Inc",
-		"%{prj.location}/Src",
-		"%{prj.location}/Src/Shaders",
-		"%{prj.location}/Src/Shaders/Compiled",
+		"Inc",
+		"Src",
+		"Src/Shaders",
+		"Src/Shaders/Compiled",
 	}
 
 	dependson
 	{
-		-- Nil
+		-- nil
 	}
 
 	links
 	{
-		-- Nil
+		-- nil
 	}
 
 	defines
@@ -96,3 +97,48 @@ include "premake5.vstudio.vc2010.project.override.lua"
 		optimize "on"
 
 	filter {}
+
+	--[[ FUNCTIONS ]]
+
+	local function ensure_shaders_for_directx_tk(prj)
+		if (prj.name == "DirectXTK") then
+			p.push('<Target Name="ATGEnsureShaders" BeforeTargets="PrepareForBuild">')
+				p.push('<PropertyGroup>')
+					p.w('<_ATGFXCPath>$(WindowsSDK_ExecutablePath_x64.Split(\';\')[0])</_ATGFXCPath>')
+					p.w('<_ATGFXCPath>$(_ATGFXCPath.Replace("x64",""))</_ATGFXCPath>')
+					p.w('<_ATGFXCPath Condition="\'$(_ATGFXCPath)\' != \'\' and !HasTrailingSlash(\'$(_ATGFXCPath)\')">$(_ATGFXCPath)\\</_ATGFXCPath>')
+					p.w('<_ATGFXCVer>$([System.Text.RegularExpressions.Regex]::Match($(_ATGFXCPath), `10\\.0\\.\\d+\\.0`))</_ATGFXCVer>')
+					p.w('<_ATGFXCVer Condition="\'$(_ATGFXCVer)\' != \'\' and !HasTrailingSlash(\'$(_ATGFXCVer)\')">$(_ATGFXCVer)\\</_ATGFXCVer>')
+				p.pop('</PropertyGroup>')
+				p.w('<Exec Condition="!Exists(\'src/Shaders/Compiled/SpriteEffect_SpriteVertexShader.inc\')" WorkingDirectory="$(ProjectDir)src/Shaders" Command="CompileShaders" EnvironmentVariables="WindowsSdkVerBinPath=$(_ATGFXCPath)" />')
+				p.push('<PropertyGroup>')
+					p.w('<_ATGFXCPath />')
+					p.w('<_ATGFXCVer />')
+				p.pop('</PropertyGroup>')
+			p.pop('</Target>')
+			printf("Generated 'ATGEnsureShaders' for DirectXTK project...")
+		end
+	end
+
+	local function delete_shaders_for_directx_tk(prj)
+		if (prj.name == "DirectXTK") then
+			p.push('<Target Name="ATGDeleteShaders" AfterTargets="Clean">')
+				p.push('<ItemGroup>')
+					p.w('<_ATGShaderHeaders Include="$(ProjectDir)src/Shaders/Compiled/*.inc" Exclude="$(ProjectDir)src/Shaders/Compiled/*Xbox*.inc" />')
+					p.w('<_ATGShaderSymbols Include="$(ProjectDir)src/Shaders/Compiled/*.pdb" Exclude="$(ProjectDir)src/Shaders/Compiled/*Xbox*.pdb" />')
+				p.pop('</ItemGroup>')
+				p.w('<Delete Files="@(_ATGShaderHeaders)" />')
+				p.w('<Delete Files="@(_ATGShaderSymbols)" />')
+			p.pop('</Target>')
+			printf("Generated 'ATGDeleteShaders' for DirectXTK project...")
+		end
+	end
+
+	--[[ OVERRIDE ]]
+
+	p.override(m.elements, "project", function(base, prj)
+		local calls = base(prj)
+		table.insertafter(calls, m.importExtensionTargets, delete_shaders_for_directx_tk)
+		table.insertafter(calls, m.importExtensionTargets, ensure_shaders_for_directx_tk)
+		return calls
+	end)
