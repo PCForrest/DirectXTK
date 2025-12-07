@@ -1,4 +1,4 @@
-require('vstudio')
+﻿require('vstudio')
 
 local p = premake
 local m = p.vstudio.vc2010
@@ -13,8 +13,7 @@ project "DirectXTK"
 	pchheader "pch.h"
 	pchsource "Src/pch.cpp"
 
-	files
-	{
+	files{
 		"premake5.lua",
 		".editorconfig",
 		"Audio/*.h",
@@ -32,16 +31,14 @@ project "DirectXTK"
 		"README.md",
 	}
 
-	removefiles
-	{
+	removefiles	{
 		"premake5.lua",
 		".editorconfig",
 		"Inc/XboxDDSTextureloader.h",
 		"Src/XboxDDSTextureloader.cpp",
 	}
 
-	vpaths
-	{
+	vpaths	{
 		["Audio"] =
 		{
 			"Inc/Audio.h",
@@ -175,26 +172,22 @@ project "DirectXTK"
 		},
 	}
 
-	includedirs
-	{
+	includedirs	{
 		"Inc",
 		"Src",
 		"Src/Shaders",
 		"Src/Shaders/Compiled",
 	}
 
-	dependson
-	{
+	dependson	{
 		-- nil
 	}
 
-	links
-	{
+	links	{
 		-- nil
 	}
 
-	defines
-	{
+	defines	{
 		"_WIN32_WINNT=0x0A00",
 		"WIN32",
 		"_LIB",
