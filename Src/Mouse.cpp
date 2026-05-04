@@ -821,7 +821,7 @@ public:
         ThrowIfFailed(hr);
 
         using MouseMovedHandler = __FITypedEventHandler_2_Windows__CDevices__CInput__CMouseDevice_Windows__CDevices__CInput__CMouseEventArgs;
-        hr = mMouse->add_MouseMoved(Callback<MouseMovedHandler>(MouseMovedEvent).Get(), &mPointerMouseMovedToken);
+        hr = mMouse->add_MouseMoved(Callback<MouseMovedHandler>(MousePolledEvent).Get(), &mPointerMouseMovedToken);
         ThrowIfFailed(hr);
 
         using PointerHandler = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CPointerEventArgs;
@@ -1026,7 +1026,7 @@ private:
         return S_OK;
     }
 
-    static HRESULT MouseMovedEvent(IInspectable*, ABI::Windows::Devices::Input::IMouseEventArgs* args)
+    static HRESULT MousePolledEvent(IInspectable*, ABI::Windows::Devices::Input::IMouseEventArgs* args)
     {
         using namespace ABI::Windows::Devices::Input;
 
