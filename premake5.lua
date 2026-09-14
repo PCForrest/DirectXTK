@@ -3,7 +3,9 @@
 local p = premake
 local m = p.vstudio.vc2010
 
-project "DirectXTK"
+local project_name = "DirectXTK"
+
+project (project_name)
 	kind "StaticLib"
 	language "C++"
 
@@ -33,6 +35,8 @@ project "DirectXTK"
 
 	removefiles	{
 		"premake5.lua",
+		"cpp.hint",
+		"local.hint",
 		".editorconfig",
 		"Inc/XboxDDSTextureloader.h",
 		"Src/XboxDDSTextureloader.cpp",
