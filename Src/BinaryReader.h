@@ -10,13 +10,13 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <exception>
 #include <stdexcept>
 #include <type_traits>
 
 #include "PlatformHelpers.h"
-
 
 namespace DirectX
 {
@@ -28,24 +28,25 @@ namespace DirectX
         BinaryReader(_In_reads_bytes_(dataSize) uint8_t const* dataBlob, size_t dataSize) noexcept;
 
         BinaryReader(BinaryReader&&) noexcept;
-        BinaryReader& operator= (BinaryReader&&) noexcept;
+        BinaryReader& operator=(BinaryReader&&) noexcept;
 
-        BinaryReader(BinaryReader const&) = delete;
-        BinaryReader& operator= (BinaryReader const&) = delete;
+        BinaryReader(BinaryReader const&)            = delete;
+        BinaryReader& operator=(BinaryReader const&) = delete;
 
         // Reads a single value.
-        template<typename T> T const& Read()
+        template<typename T>
+        T const& Read()
         {
             return *ReadArray<T>(1);
         }
 
-
         // Reads an array of values.
-        template<typename T> T const* ReadArray(size_t elementCount)
+        template<typename T>
+        T const* ReadArray(size_t elementCount)
         {
             static_assert(std::is_standard_layout<T>::value, "Can only read plain-old-data types");
 
-            uint64_t byteCount = uint64_t(sizeof(T)) * uint64_t(elementCount);
+            const uint64_t byteCount = uint64_t(sizeof(T)) * uint64_t(elementCount);
             if (byteCount > UINT32_MAX)
                 throw std::overflow_error("ReadArray");
 
@@ -64,10 +65,8 @@ namespace DirectX
             return result;
         }
 
-
         // Lower level helper reads directly from the filesystem into memory.
         static HRESULT ReadEntireFile(_In_z_ wchar_t const* fileName, _Inout_ std::unique_ptr<uint8_t[]>& data, _Out_ size_t* dataSize);
-
 
     private:
         // The data currently being read.
@@ -76,4 +75,4 @@ namespace DirectX
 
         std::unique_ptr<uint8_t[]> mOwnedData;
     };
-}
+} // namespace DirectX

@@ -100,38 +100,13 @@ jobs:
             shared: 'OFF'
             gameinput: 'OFF'
           - toolver: '14'
-            build_type: x64-Debug-MinGW
-            arch: amd64
-            shared: 'OFF'
-            gameinput: 'OFF'
-          - toolver: '14'
-            build_type: x64-Release-MinGW
-            arch: amd64
-            shared: 'OFF'
-            gameinput: 'OFF'
-          - toolver: '14'
-            build_type: x64-Debug-MinGW
-            arch: amd64
-            shared: 'OFF'
-            gameinput: 'ON'
-          - toolver: '14'
             build_type: x64-Debug-VCPKG
             arch: amd64
             shared: 'ON'
             gameinput: 'ON'
-          - toolver: '14'
-            build_type: x64-Debug-MinGW
-            arch: amd64
-            shared: 'ON'
-            gameinput: 'OFF'
-          - toolver: '14'
-            build_type: x64-Release-MinGW
-            arch: amd64
-            shared: 'ON'
-            gameinput: 'OFF'
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 'Install Ninja'
         run: choco install ninja
@@ -147,14 +122,7 @@ jobs:
           echo "VCPKG_INSTALLED_DIR=${{ github.workspace }}/build/vcpkg_installed" >> $env:GITHUB_ENV
           if ("${{ matrix.arch }}" -eq "amd64")
           {
-              if ("${{ matrix.build_type }}" -match "MinGW")
-              {
-                  echo "VCPKG_DEFAULT_TRIPLET=x64-mingw-static" >> $env:GITHUB_ENV
-              }
-              else
-              {
-                  echo "VCPKG_DEFAULT_TRIPLET=x64-windows" >> $env:GITHUB_ENV
-              }
+              echo "VCPKG_DEFAULT_TRIPLET=x64-windows" >> $env:GITHUB_ENV
           }
           elseif ("${{ matrix.arch }}" -eq "amd64_x86")
           {
@@ -193,7 +161,7 @@ jobs:
         env:
           vcpkgRelease: '${{ vars.VCPKG_COMMIT_ID }}'
 
-      - uses: lukka/run-vcpkg@7d259227a1fb6471a0253dd5ab7419835228f7d7 # v11
+      - uses: lukka/run-vcpkg@5ad8bfa6267ef808f7d48cf4004c879bed752401 # v11
         with:
           runVcpkgInstall: true
           vcpkgJsonGlob: '**/build/vcpkg.json'

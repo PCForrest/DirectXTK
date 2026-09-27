@@ -22,7 +22,7 @@ These instructions define how GitHub Copilot should assist with this project. Th
 - **Code Style**: The project uses an .editorconfig file to enforce coding standards. Follow the rules defined in `.editorconfig` for indentation, line endings, and other formatting. Additional information can be found on the wiki at [Implementation](https://github.com/microsoft/DirectXTK/wiki/Implementation). The library's public API requires C++11, and the project builds with C++17 (`CMAKE_CXX_STANDARD 17`). The command-line tools also use C++17, including `<filesystem>` for long file path support. This code is designed to build with Visual Studio 2022, Visual Studio 2026, clang for Windows v12 or later, or MinGW 12.2.
 > Notable `.editorconfig` rules: C/C++ and HLSL files use 4-space indentation, `crlf` line endings, and `latin1` charset — avoid non-ASCII characters in source files. HLSL files have separate indent/spacing rules defined in `.editorconfig`.
 - **Documentation**: The project provides documentation in the form of wiki pages available at [Documentation](https://github.com/microsoft/DirectXTK/wiki/).
-- **Error Handling**: Use C++ exceptions for error handling and uses RAII smart pointers to ensure resources are properly managed. For some functions that return HRESULT error codes, they are marked `noexcept`, use `std::nothrow` for memory allocation, and should not throw exceptions.
+- **Error Handling**: Use C++ exceptions for error handling and use RAII smart pointers to ensure resources are properly managed. For some functions that return HRESULT error codes, they are marked `noexcept`, use `std::nothrow` for memory allocation, and should not throw exceptions.
 - **Testing**: Unit tests for this project are implemented in this repository [Test Suite](https://github.com/walbourn/directxtktest/) and can be run using CTest per the instructions at [Test Documentation](https://github.com/walbourn/directxtktest/wiki). See [test copilot instructions](https://github.com/walbourn/directxtktest/blob/main/.github/copilot-instructions.md) for additional information on the tests.
 - **Security**: This project uses secure coding practices from the Microsoft Secure Coding Guidelines, and is subject to the `SECURITY.md` file in the root of the repository. Functions that read input from image files, geometry files, and audio files are subject to OneFuzz fuzz testing to ensure they are secure against malformed files.
 - **Dependencies**: The project uses CMake and VCPKG for managing dependencies, making optional use of DirectXMath, GameInput, and XAudio2Redist. The project can be built without these dependencies, relying on the Windows SDK for core functionality. CMake build options include `BUILD_GAMEINPUT`, `BUILD_WGI`, and `BUILD_XINPUT` for alternative input backends.
@@ -31,7 +31,7 @@ These instructions define how GitHub Copilot should assist with this project. Th
 
 ## File Structure
 
-```txt
+```plaintext
 .azuredevops/   # Azure DevOps pipeline configuration and policy files.
 .github/        # GitHub Actions workflow files and linter configuration files.
 .nuget/         # NuGet package configuration files.
@@ -42,6 +42,7 @@ Src/            # Implementation header and source files.
   Shaders/      # HLSL shader files.
 MakeSpriteFont/ # C# CLI tool for capturing sprite fonts.
 XWBTool/        # C++ CLI tool for creating XACT-style wave banks.
+skills/         # Published CoPilot skills for use by developers.
 Tests/          # Tests are designed to be cloned from a separate repository at this location.
 wiki/           # Local clone of the GitHub wiki documentation repository.
 ```
@@ -58,7 +59,7 @@ wiki/           # Local clone of the GitHub wiki documentation repository.
 - Make use of `assert` for debugging checks, but be sure to validate input parameters in release builds.
 - Make use of the `DebugTrace` helper to log diagnostic messages, particularly at the point of throwing an exception.
 - Explicitly `= delete` copy constructors and copy-assignment operators on all classes that use the pImpl idiom.
-- Explicitly utilize `= default` or `=delete` for copy constructors, assignment operators, move constructors and move-assignment operators where appropriate.
+- Explicitly utilize `= default` or `= delete` for copy constructors, assignment operators, move constructors and move-assignment operators where appropriate.
 - Use 16-byte alignment (`_aligned_malloc` / `_aligned_free`) to support SIMD operations in the implementation, but do not expose this requirement in public APIs.
 - All implementation `.cpp` files include `pch.h` as their first include (precompiled header). MinGW builds skip precompiled headers.
 - `Model` and related classes require RTTI (`/GR` on MSVC, `__GXX_RTTI` on GCC/Clang). The CMake build enables `/GR` automatically; do not disable RTTI when using `Model`.
@@ -163,7 +164,7 @@ Headers that trigger Clang warnings use paired `#pragma clang diagnostic push`/`
 ### Patterns to Avoid
 
 - Don’t use raw pointers for ownership.
-- Avoid macros for constants—prefer `constexpr` or `inline` `const`.
+- Avoid macros for constants—prefer `constexpr` or `inline const`.
 - Don’t put implementation logic in header files unless using templates, although the SimpleMath library does use an .inl file for performance.
 - Avoid using `using namespace` in header files to prevent polluting the global namespace.
 - Don't use `[[deprecated]]` or `__declspec(deprecated)` attributes. Feature retirement is communicated via `CHANGELOG.md` notes, not in-source deprecation markers.
@@ -199,7 +200,7 @@ Every source file (`.cpp`, `.h`, `.hlsl`, `.fx`, etc.) must begin with this bloc
 
 Section separators within files use:
 - Major sections: `//--------------------------------------------------------------------------------------`
-- Subsections:   `//--------------------------------------------------------------------------------------`
+- Subsections:   `//----------------------------------------------------------------------------------`
 
 The project does **not** use Doxygen. API documentation is maintained exclusively on the GitHub wiki.
 
@@ -225,9 +226,9 @@ Shaders in `Src/Shaders/` are compiled with **FXC**, producing embedded C++ head
 - [Games for Windows and the DirectX SDK blog - December 2013](https://walbourn.github.io/directx-tool-kit-for-audio/)
 - [Games for Windows and the DirectX SDK blog - September 2014](https://walbourn.github.io/directx-tool-kit-now-with-gamepads/)
 - [Games for Windows and the DirectX SDK blog - August 2015](https://walbourn.github.io/directx-tool-kit-keyboard-and-mouse-support/)
-- [Games for Windows and the DirectX SDK blog - October 2021](https://walbourn.github.io/directx-tool-kit-vertex-skinning-update/)
-- [Games for Windows and the DirectX SDK blog - September 2021](https://walbourn.github.io/latest-news-on-directx-tool-kit/)
 - [Games for Windows and the DirectX SDK blog - May 2020](https://walbourn.github.io/directx-tool-kit-for-audio-updates-and-a-direct3d-9-footnote/)
+- [Games for Windows and the DirectX SDK blog - September 2021](https://walbourn.github.io/latest-news-on-directx-tool-kit/)
+- [Games for Windows and the DirectX SDK blog - October 2021](https://walbourn.github.io/directx-tool-kit-vertex-skinning-update/)
 
 ## No speculation
 
@@ -260,11 +261,11 @@ When creating documentation:
 ## Cross-platform Support Notes
 
 - The code targets Win32 desktop applications for Windows 8.1 or later, legacy Xbox One XDK, and Universal Windows Platform (UWP) apps for Windows 10 and Windows 11.
-- Portability and conformance of the code is validated by building with Visual C++, clang/LLVM for Windows, and MinGW.
+- Portability and conformance of the code are validated by building with Visual C++, clang/LLVM for Windows, and MinGW.
 - For PC development using the *Microsoft GDK*, the project provides MSBuild solution `DirectXTK_GDKW_2022.sln` for the x64 or ARM64 architectures.
 - The MSBuild solution `DirectXTK_GDK_2022.sln` is for *Microsoft GDK with Xbox Extensions* development for PC using the legacy Gaming.Desktop.x64 custom platform. There is no support for the Gaming.Xbox.*.x64 custom platforms since they do not support DirectX 11.
 - The project ships MSBuild projects for Visual Studio 2022 (`.sln` / `.vcxproj`) and Visual Studio 2026 (`.slnx` / `.vcxproj`). VS 2019 projects have been retired.
-- The CMake build supports legacy Xbox One XDK via the `XBOX_CONSOLE_TARGET` variable (`durango`). Xbox Series X|S (`scarlett`) and Xbox One (`xboxone`) via the *Microsoft GDK with Xbox Extensions* only supports DirectX 12, so this version of the library cannot support those platforms.
+- The CMake build supports legacy Xbox One XDK via the `XBOX_CONSOLE_TARGET` variable (`durango`). Xbox Series X|S (`scarlett`) and Xbox One (`xboxone`) via the *Microsoft GDK with Xbox Extensions* only support DirectX 12, so this version of the library cannot support those platforms.
 
 ### Platform and Compiler `#ifdef` Guards
 
@@ -291,7 +292,7 @@ Use these established guards — do not invent new ones:
 | `USING_COREWINDOW` | CoreWindow-based input (UWP) for Keyboard, Mouse |
 | `GAMEINPUT_API_VERSION` | GameInput SDK version detection for API-level feature checks |
 
-> `_M_ARM`/ `__arm__` is legacy 32-bit ARM which is deprecated.
+> `_M_ARM` / `__arm__` is legacy 32-bit ARM which is deprecated.
 
 ## Code Review Instructions
 
@@ -317,3 +318,44 @@ When reviewing documentation, do the following:
 - Review the public interface defined in the `Inc` folder.
 - Read the documentation on the wiki located in [this git repository](https://github.com/microsoft/DirectXTK.wiki.git).
 - Report any specific gaps in the documentation compared to the public interface.
+
+## Code Change Rules
+
+- Make precise, surgical changes that **fully** address the request. Don't modify unrelated code, but ensure changes are complete and correct.
+- Don't fix pre-existing issues unrelated to your task. However, if you discover bugs directly caused by or tightly coupled to the code you're changing, fix those too.
+- Update documentation if it is directly related to the changes you are making.
+- Always validate that your changes don't break existing behavior.
+
+### Linting, Building, Testing
+
+- Only run linters, builds and tests that already exist. Do not add new linting, building or testing tools unless necessary for the task.
+- Use the smallest targeted test, build, or lint command that covers the changed behavior. When related targeted selectors use the same runner, include them in one invocation; escalate to full-suite or baseline runs only when targeted validation shows they are needed.
+- Documentation changes do not need to be linted, built or tested unless there are specific tests for documentation.
+
+### Using Ecosystem Tools
+
+- Prefer ecosystem tools (package managers, scaffolding, refactoring tools, linters) over manual changes.
+- Install packages only when changing dependencies or after a missing-dependency failure.
+
+### Code Commenting Style
+
+- Only comment code that needs a bit of clarification. Do not comment otherwise.
+
+## Release Process
+
+The release process is documented in the [release skill](.github/skills/release/SKILL.md). Invoke the `release` skill for step-by-step guidance when performing a release.
+
+## CoPilot Skills
+
+The project includes published CoPilot skills for developers:
+
+- **Release-Process**: Guide for performing the DirectX Tool Kit release process. Invoked when asked to help with releasing a new version, publishing packages, or updating ports. See [Release Process skill](.github/skills/release/SKILL.md) for details.
+- **directxtk-usage**: Provides usage guidance for the DirectX Tool Kit for DX11 library. Located in the `skills/directxtk-usage/` directory.
+- **directxtk-tutorial**: Provides an interactive tutorial which can create a project, add the toolkit, and implement features in a step-by-step fashion. Located in the `skills/directxtk-tutorial` directory.
+
+To use these skills in the Copilot CLI:
+
+```bash
+/skills list
+/skills search directxtk
+```

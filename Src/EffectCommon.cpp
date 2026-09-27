@@ -14,7 +14,6 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
-
 // IEffectMatrices default method
 void XM_CALLCONV IEffectMatrices::SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection)
 {
@@ -23,21 +22,18 @@ void XM_CALLCONV IEffectMatrices::SetMatrices(FXMMATRIX world, CXMMATRIX view, C
     SetProjection(projection);
 }
 
-
 // Constructor initializes default matrix values.
 EffectMatrices::EffectMatrices() noexcept
 {
     const XMMATRIX id = XMMatrixIdentity();
-    world = id;
-    view = id;
-    projection = id;
-    worldView = id;
+    world             = id;
+    view              = id;
+    projection        = id;
+    worldView         = id;
 }
 
-
 // Lazily recomputes the combined world+view+projection matrix.
-_Use_decl_annotations_
-void EffectMatrices::SetConstants(int& dirtyFlags, XMMATRIX& worldViewProjConstant)
+_Use_decl_annotations_ void EffectMatrices::SetConstants(int& dirtyFlags, XMMATRIX& worldViewProjConstant)
 {
     if (dirtyFlags & EffectDirtyFlags::WorldViewProj)
     {
@@ -50,18 +46,60 @@ void EffectMatrices::SetConstants(int& dirtyFlags, XMMATRIX& worldViewProjConsta
     }
 }
 
+// Lazily recomputes the combined world+view+projection matrix, inverse, eyePosition, etc.
+// This version is used for effects that do not use the EffectLights helper.
+_Use_decl_annotations_ void EffectMatrices::SetConstants(int& dirtyFlags,
+    XMMATRIX&                                                 worldConstant,
+    XMVECTOR                                                  worldInverseTransposeConstant[3],
+    XMMATRIX&                                                 worldViewProjConstant,
+    XMVECTOR&                                                 eyePositionConstant)
+{
+    // Combined world+view+projection matrix.
+    if (dirtyFlags & EffectDirtyFlags::WorldViewProj)
+    {
+        worldView = XMMatrixMultiply(world, view);
+
+        worldViewProjConstant = XMMatrixTranspose(XMMatrixMultiply(worldView, projection));
+
+        dirtyFlags &= ~EffectDirtyFlags::WorldViewProj;
+        dirtyFlags |= EffectDirtyFlags::ConstantBuffer;
+    }
+
+    // World inverse transpose matrix.
+    if (dirtyFlags & EffectDirtyFlags::WorldInverseTranspose)
+    {
+        worldConstant = XMMatrixTranspose(world);
+
+        const XMMATRIX worldInverse = XMMatrixInverse(nullptr, world);
+
+        worldInverseTransposeConstant[0] = worldInverse.r[0];
+        worldInverseTransposeConstant[1] = worldInverse.r[1];
+        worldInverseTransposeConstant[2] = worldInverse.r[2];
+
+        dirtyFlags &= ~EffectDirtyFlags::WorldInverseTranspose;
+        dirtyFlags |= EffectDirtyFlags::ConstantBuffer;
+    }
+
+    // Eye position.
+    if (dirtyFlags & EffectDirtyFlags::EyePosition)
+    {
+        const XMMATRIX viewInverse = XMMatrixInverse(nullptr, view);
+        eyePositionConstant        = viewInverse.r[3];
+
+        dirtyFlags &= ~EffectDirtyFlags::EyePosition;
+        dirtyFlags |= EffectDirtyFlags::ConstantBuffer;
+    }
+}
 
 // Constructor initializes default fog settings.
-EffectFog::EffectFog() noexcept :
-    enabled(false),
-    start(0),
-    end(1.f)
+EffectFog::EffectFog() noexcept
+    : enabled(false),
+      start(0),
+      end(1.f)
 {}
 
-
 // Lazily recomputes the derived vector used by shader fog calculations.
-_Use_decl_annotations_
-void XM_CALLCONV EffectFog::SetConstants(int& dirtyFlags, FXMMATRIX worldView, XMVECTOR& fogVectorConstant)
+_Use_decl_annotations_ void XM_CALLCONV EffectFog::SetConstants(int& dirtyFlags, FXMMATRIX worldView, XMVECTOR& fogVectorConstant)
 {
     if (enabled)
     {
@@ -82,9 +120,8 @@ void XM_CALLCONV EffectFog::SetConstants(int& dirtyFlags, FXMMATRIX worldView, X
                 // with a single dot product, using only the Z row of the world+view matrix.
 
                 // _13, _23, _33, _43
-                const XMVECTOR worldViewZ = XMVectorMergeXY(
-                    XMVectorMergeZW(worldView.r[0], worldView.r[2]),
-                    XMVectorMergeZW(worldView.r[1], worldView.r[3]));
+                const XMVECTOR worldViewZ
+                    = XMVectorMergeXY(XMVectorMergeZW(worldView.r[0], worldView.r[2]), XMVectorMergeZW(worldView.r[1], worldView.r[3]));
 
                 // 0, 0, 0, fogStart
                 const XMVECTOR wOffset = XMVectorSwizzle<1, 2, 3, 0>(XMLoadFloat(&start));
@@ -110,13 +147,11 @@ void XM_CALLCONV EffectFog::SetConstants(int& dirtyFlags, FXMMATRIX worldView, X
     }
 }
 
-
 // Constructor initializes default material color settings.
-EffectColor::EffectColor() noexcept :
-    diffuseColor(g_XMOne),
-    alpha(1.f)
+EffectColor::EffectColor() noexcept
+    : diffuseColor(g_XMOne),
+      alpha(1.f)
 {}
-
 
 // Lazily recomputes the material color parameter for shaders that do not support realtime lighting.
 void EffectColor::SetConstants(_Inout_ int& dirtyFlags, _Inout_ XMVECTOR& diffuseColorConstant)
@@ -133,32 +168,33 @@ void EffectColor::SetConstants(_Inout_ int& dirtyFlags, _Inout_ XMVECTOR& diffus
     }
 }
 
-
 // Constructor initializes default light settings.
-EffectLights::EffectLights() noexcept :
-    emissiveColor{},
-    ambientLightColor{},
-    lightEnabled{},
-    lightDiffuseColor{},
-    lightSpecularColor{}
+EffectLights::EffectLights() noexcept
+    : emissiveColor{},
+      ambientLightColor{},
+      lightEnabled{},
+      lightDiffuseColor{},
+      lightSpecularColor{}
 {
     for (int i = 0; i < MaxDirectionalLights; i++)
     {
-        lightEnabled[i] = (i == 0);
+        lightEnabled[i]      = (i == 0);
         lightDiffuseColor[i] = g_XMOne;
     }
 }
 
-
 #ifdef _PREFAST_
 #pragma prefast(push)
-#pragma prefast(disable:22103, "PREFAST doesn't understand buffer is bounded by a static const value even with SAL" )
+#pragma prefast(disable : 22103, "PREFAST doesn't understand buffer is bounded by a static const value even with SAL")
 #endif
 
 // Initializes constant buffer fields to match the current lighting state.
-_Use_decl_annotations_ void EffectLights::InitializeConstants(XMVECTOR& specularColorAndPowerConstant, XMVECTOR* lightDirectionConstant, XMVECTOR* lightDiffuseConstant, XMVECTOR* lightSpecularConstant) const
+_Use_decl_annotations_ void EffectLights::InitializeConstants(XMVECTOR& specularColorAndPowerConstant,
+    XMVECTOR*                                                           lightDirectionConstant,
+    XMVECTOR*                                                           lightDiffuseConstant,
+    XMVECTOR*                                                           lightSpecularConstant) const
 {
-    static const XMVECTORF32 defaultSpecular = { { { 1, 1, 1, 16 } } };
+    static const XMVECTORF32 defaultSpecular       = { { { 1, 1, 1, 16 } } };
     static const XMVECTORF32 defaultLightDirection = { { { 0, -1, 0, 0 } } };
 
     specularColorAndPowerConstant = defaultSpecular;
@@ -167,7 +203,7 @@ _Use_decl_annotations_ void EffectLights::InitializeConstants(XMVECTOR& specular
     {
         lightDirectionConstant[i] = defaultLightDirection;
 
-        lightDiffuseConstant[i] = lightEnabled[i] ? lightDiffuseColor[i] : g_XMZero;
+        lightDiffuseConstant[i]  = lightEnabled[i] ? lightDiffuseColor[i] : g_XMZero;
         lightSpecularConstant[i] = lightEnabled[i] ? lightSpecularColor[i] : g_XMZero;
     }
 }
@@ -176,9 +212,15 @@ _Use_decl_annotations_ void EffectLights::InitializeConstants(XMVECTOR& specular
 #pragma prefast(pop)
 #endif
 
-
 // Lazily recomputes derived parameter values used by shader lighting calculations.
-_Use_decl_annotations_ void EffectLights::SetConstants(int& dirtyFlags, EffectMatrices const& matrices, XMMATRIX& worldConstant, XMVECTOR worldInverseTransposeConstant[3], XMVECTOR& eyePositionConstant, XMVECTOR& diffuseColorConstant, XMVECTOR& emissiveColorConstant, bool lightingEnabled)
+_Use_decl_annotations_ void EffectLights::SetConstants(int& dirtyFlags,
+    EffectMatrices const&                                   matrices,
+    XMMATRIX&                                               worldConstant,
+    XMVECTOR                                                worldInverseTransposeConstant[3],
+    XMVECTOR&                                               eyePositionConstant,
+    XMVECTOR&                                               diffuseColorConstant,
+    XMVECTOR&                                               emissiveColorConstant,
+    bool                                                    lightingEnabled)
 {
     if (lightingEnabled)
     {
@@ -232,7 +274,7 @@ _Use_decl_annotations_ void EffectLights::SetConstants(int& dirtyFlags, EffectMa
 
     if (dirtyFlags & EffectDirtyFlags::MaterialColor)
     {
-        XMVECTOR diffuse = diffuseColor;
+        XMVECTOR       diffuse     = diffuseColor;
         const XMVECTOR alphaVector = XMVectorReplicate(alpha);
 
         if (lightingEnabled)
@@ -255,14 +297,14 @@ _Use_decl_annotations_ void EffectLights::SetConstants(int& dirtyFlags, EffectMa
     }
 }
 
-
 #ifdef _PREFAST_
 #pragma prefast(push)
-#pragma prefast(disable:26015, "PREFAST doesn't understand that ValidateLightIndex bounds whichLight" )
+#pragma prefast(disable : 26015, "PREFAST doesn't understand that ValidateLightIndex bounds whichLight")
 #endif
 
 // Helper for turning one of the directional lights on or off.
-_Use_decl_annotations_ int EffectLights::SetLightEnabled(int whichLight, bool value, XMVECTOR* lightDiffuseConstant, XMVECTOR* lightSpecularConstant)
+_Use_decl_annotations_ int
+EffectLights::SetLightEnabled(int whichLight, bool value, XMVECTOR* lightDiffuseConstant, XMVECTOR* lightSpecularConstant)
 {
     ValidateLightIndex(whichLight);
 
@@ -274,23 +316,21 @@ _Use_decl_annotations_ int EffectLights::SetLightEnabled(int whichLight, bool va
     if (value)
     {
         // If this light is now on, store its color in the constant buffer.
-        lightDiffuseConstant[whichLight] = lightDiffuseColor[whichLight];
+        lightDiffuseConstant[whichLight]  = lightDiffuseColor[whichLight];
         lightSpecularConstant[whichLight] = lightSpecularColor[whichLight];
     }
     else
     {
         // If the light is off, reset constant buffer colors to zero.
-        lightDiffuseConstant[whichLight] = g_XMZero;
+        lightDiffuseConstant[whichLight]  = g_XMZero;
         lightSpecularConstant[whichLight] = g_XMZero;
     }
 
     return EffectDirtyFlags::ConstantBuffer;
 }
 
-
 // Helper for setting diffuse color of one of the directional lights.
-_Use_decl_annotations_
-int XM_CALLCONV EffectLights::SetLightDiffuseColor(int whichLight, FXMVECTOR value, XMVECTOR* lightDiffuseConstant)
+_Use_decl_annotations_ int XM_CALLCONV EffectLights::SetLightDiffuseColor(int whichLight, FXMVECTOR value, XMVECTOR* lightDiffuseConstant)
 {
     ValidateLightIndex(whichLight);
 
@@ -308,10 +348,8 @@ int XM_CALLCONV EffectLights::SetLightDiffuseColor(int whichLight, FXMVECTOR val
     return 0;
 }
 
-
 // Helper for setting specular color of one of the directional lights.
-_Use_decl_annotations_
-int XM_CALLCONV EffectLights::SetLightSpecularColor(int whichLight, FXMVECTOR value, XMVECTOR* lightSpecularConstant)
+_Use_decl_annotations_ int XM_CALLCONV EffectLights::SetLightSpecularColor(int whichLight, FXMVECTOR value, XMVECTOR* lightSpecularConstant)
 {
     ValidateLightIndex(whichLight);
 
@@ -333,7 +371,6 @@ int XM_CALLCONV EffectLights::SetLightSpecularColor(int whichLight, FXMVECTOR va
 #pragma prefast(pop)
 #endif
 
-
 // Parameter validation helper.
 void EffectLights::ValidateLightIndex(int whichLight)
 {
@@ -343,29 +380,25 @@ void EffectLights::ValidateLightIndex(int whichLight)
     }
 }
 
-
 // Activates the default lighting rig (key, fill, and back lights).
 void EffectLights::EnableDefaultLighting(_In_ IEffectLights* effect)
 {
-    static const XMVECTORF32 defaultDirections[MaxDirectionalLights] =
-    {
+    static const XMVECTORF32 defaultDirections[MaxDirectionalLights] = {
         { { { -0.5265408f, -0.5735765f, -0.6275069f, 0 } } },
-        { { {  0.7198464f,  0.3420201f,  0.6040227f, 0 } } },
-        { { {  0.4545195f, -0.7660444f,  0.4545195f, 0 } } },
+        { { { 0.7198464f, 0.3420201f, 0.6040227f, 0 } } },
+        { { { 0.4545195f, -0.7660444f, 0.4545195f, 0 } } },
     };
 
-    static const XMVECTORF32 defaultDiffuse[MaxDirectionalLights] =
-    {
-        { { { 1.0000000f, 0.9607844f, 0.8078432f, 0 } }  },
-        { { { 0.9647059f, 0.7607844f, 0.4078432f, 0 } }  },
-        { { { 0.3231373f, 0.3607844f, 0.3937255f, 0 } }  },
+    static const XMVECTORF32 defaultDiffuse[MaxDirectionalLights] = {
+        { { { 1.0000000f, 0.9607844f, 0.8078432f, 0 } } },
+        { { { 0.9647059f, 0.7607844f, 0.4078432f, 0 } } },
+        { { { 0.3231373f, 0.3607844f, 0.3937255f, 0 } } },
     };
 
-    static const XMVECTORF32 defaultSpecular[MaxDirectionalLights] =
-    {
-        { { { 1.0000000f, 0.9607844f, 0.8078432f, 0 } }  },
-        { { { 0.0000000f, 0.0000000f, 0.0000000f, 0 } }  },
-        { { { 0.3231373f, 0.3607844f, 0.3937255f, 0 } }  },
+    static const XMVECTORF32 defaultSpecular[MaxDirectionalLights] = {
+        { { { 1.0000000f, 0.9607844f, 0.8078432f, 0 } } },
+        { { { 0.0000000f, 0.0000000f, 0.0000000f, 0 } } },
+        { { { 0.3231373f, 0.3607844f, 0.3937255f, 0 } } },
     };
 
     static const XMVECTORF32 defaultAmbient = { { { 0.05333332f, 0.09882354f, 0.1819608f, 0 } } };
@@ -382,11 +415,13 @@ void EffectLights::EnableDefaultLighting(_In_ IEffectLights* effect)
     }
 }
 
-
 // Gets or lazily creates the specified vertex shader permutation.
-ID3D11VertexShader* EffectDeviceResources::DemandCreateVertexShader(_Inout_ ComPtr<ID3D11VertexShader>& vertexShader, ShaderBytecode const& bytecode)
+ID3D11VertexShader* EffectDeviceResources::DemandCreateVertexShader(_Inout_ ComPtr<ID3D11VertexShader>& vertexShader,
+    ShaderBytecode const&                                                                               bytecode)
 {
-    return DemandCreate(vertexShader, mMutex, [&](ID3D11VertexShader** pResult) -> HRESULT
+    return DemandCreate(vertexShader,
+        mMutex,
+        [&](ID3D11VertexShader** pResult) -> HRESULT
         {
             HRESULT hr = mDevice->CreateVertexShader(bytecode.code, bytecode.length, nullptr, pResult);
 
@@ -397,11 +432,13 @@ ID3D11VertexShader* EffectDeviceResources::DemandCreateVertexShader(_Inout_ ComP
         });
 }
 
-
 // Gets or lazily creates the specified pixel shader permutation.
-ID3D11PixelShader* EffectDeviceResources::DemandCreatePixelShader(_Inout_ ComPtr<ID3D11PixelShader>& pixelShader, ShaderBytecode const& bytecode)
+ID3D11PixelShader* EffectDeviceResources::DemandCreatePixelShader(_Inout_ ComPtr<ID3D11PixelShader>& pixelShader,
+    ShaderBytecode const&                                                                            bytecode)
 {
-    return DemandCreate(pixelShader, mMutex, [&](ID3D11PixelShader** pResult) -> HRESULT
+    return DemandCreate(pixelShader,
+        mMutex,
+        [&](ID3D11PixelShader** pResult) -> HRESULT
         {
             HRESULT hr = mDevice->CreatePixelShader(bytecode.code, bytecode.length, nullptr, pResult);
 
@@ -412,11 +449,12 @@ ID3D11PixelShader* EffectDeviceResources::DemandCreatePixelShader(_Inout_ ComPtr
         });
 }
 
-
 // Gets or lazily creates the default texture
 ID3D11ShaderResourceView* EffectDeviceResources::GetDefaultTexture()
 {
-    return DemandCreate(mDefaultTexture, mMutex, [&](ID3D11ShaderResourceView** pResult) -> HRESULT
+    return DemandCreate(mDefaultTexture,
+        mMutex,
+        [&](ID3D11ShaderResourceView** pResult) -> HRESULT
         {
             static const uint32_t s_pixel = 0xffffffff;
 
@@ -424,22 +462,22 @@ ID3D11ShaderResourceView* EffectDeviceResources::GetDefaultTexture()
 
             D3D11_TEXTURE2D_DESC desc = {};
             desc.Width = desc.Height = desc.MipLevels = desc.ArraySize = 1;
-            desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            desc.SampleDesc.Count = 1;
-            desc.Usage = D3D11_USAGE_IMMUTABLE;
-            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            desc.Format                                                = DXGI_FORMAT_R8G8B8A8_UNORM;
+            desc.SampleDesc.Count                                      = 1;
+            desc.Usage                                                 = D3D11_USAGE_IMMUTABLE;
+            desc.BindFlags                                             = D3D11_BIND_SHADER_RESOURCE;
 
             ComPtr<ID3D11Texture2D> tex;
-            HRESULT hr = mDevice->CreateTexture2D(&desc, &initData, tex.GetAddressOf());
+            HRESULT                 hr = mDevice->CreateTexture2D(&desc, &initData, tex.GetAddressOf());
 
             if (SUCCEEDED(hr))
             {
                 SetDebugObjectName(tex.Get(), "DirectXTK:Effect");
 
                 D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
-                SRVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-                SRVDesc.Texture2D.MipLevels = 1;
+                SRVDesc.Format                          = DXGI_FORMAT_R8G8B8A8_UNORM;
+                SRVDesc.ViewDimension                   = D3D11_SRV_DIMENSION_TEXTURE2D;
+                SRVDesc.Texture2D.MipLevels             = 1;
 
                 hr = mDevice->CreateShaderResourceView(tex.Get(), &SRVDesc, pResult);
                 if (SUCCEEDED(hr))
@@ -452,7 +490,9 @@ ID3D11ShaderResourceView* EffectDeviceResources::GetDefaultTexture()
 
 ID3D11ShaderResourceView* EffectDeviceResources::GetDefaultNormalTexture()
 {
-    return DemandCreate(mDefaultNormalTexture, mMutex, [&](ID3D11ShaderResourceView** pResult) -> HRESULT
+    return DemandCreate(mDefaultNormalTexture,
+        mMutex,
+        [&](ID3D11ShaderResourceView** pResult) -> HRESULT
         {
             static const uint16_t s_pixel = 0x7f7f;
 
@@ -460,22 +500,22 @@ ID3D11ShaderResourceView* EffectDeviceResources::GetDefaultNormalTexture()
 
             D3D11_TEXTURE2D_DESC desc = {};
             desc.Width = desc.Height = desc.MipLevels = desc.ArraySize = 1;
-            desc.Format = DXGI_FORMAT_R8G8_UNORM;
-            desc.SampleDesc.Count = 1;
-            desc.Usage = D3D11_USAGE_IMMUTABLE;
-            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            desc.Format                                                = DXGI_FORMAT_R8G8_UNORM;
+            desc.SampleDesc.Count                                      = 1;
+            desc.Usage                                                 = D3D11_USAGE_IMMUTABLE;
+            desc.BindFlags                                             = D3D11_BIND_SHADER_RESOURCE;
 
             ComPtr<ID3D11Texture2D> tex;
-            HRESULT hr = mDevice->CreateTexture2D(&desc, &initData, tex.GetAddressOf());
+            HRESULT                 hr = mDevice->CreateTexture2D(&desc, &initData, tex.GetAddressOf());
 
             if (SUCCEEDED(hr))
             {
                 SetDebugObjectName(tex.Get(), "DirectXTK:Effect");
 
                 D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
-                SRVDesc.Format = DXGI_FORMAT_R8G8_UNORM;
-                SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-                SRVDesc.Texture2D.MipLevels = 1;
+                SRVDesc.Format                          = DXGI_FORMAT_R8G8_UNORM;
+                SRVDesc.ViewDimension                   = D3D11_SRV_DIMENSION_TEXTURE2D;
+                SRVDesc.Texture2D.MipLevels             = 1;
 
                 hr = mDevice->CreateShaderResourceView(tex.Get(), &SRVDesc, pResult);
                 if (SUCCEEDED(hr))

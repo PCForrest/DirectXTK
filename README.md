@@ -6,11 +6,11 @@ https://go.microsoft.com/fwlink/?LinkId=248929
 
 Copyright (c) Microsoft Corporation.
 
-## March 31, 2026
+## May 7, 2026
 
 This package contains the "DirectX Tool Kit", a collection of helper classes for writing Direct3D 11 C++ code for Win32 desktop applications for Windows 8.1 or later, Xbox One, and Universal Windows Platform (UWP) apps for Windows 10 and Windows 11.
 
-This code is designed to build with Visual Studio 2022, Visual Studio 2026, clang for Windows v12 or later, or MinGW 12.2. Use of the Windows 10 May 2020 Update SDK ([19041](https://walbourn.github.io/windows-10-may-2020-update-sdk/)) or later is required for Visual Studio.
+This code is designed to build with Visual Studio 2022, Visual Studio 2026, clang for Windows v12 or later, or MinGW. Use of the Windows 11 SDK ([22000](https://walbourn.github.io/windows-sdk-for-windows-11/)) or later is required for Visual Studio.
 
 These components are designed to work without requiring any content from the legacy DirectX SDK. For details, see [Where is the DirectX SDK?](https://aka.ms/dxsdk).
 
@@ -62,9 +62,25 @@ These components are designed to work without requiring any content from the leg
 
   * Contains miscellaneous build files and scripts.
 
+* ``skills\``
+
+  * Contains published CoPilot skills for use by developers.
+
 ## Documentation
 
 Documentation is available on the [GitHub wiki](https://github.com/Microsoft/DirectXTK/wiki).
+
+## CoPilot Usage
+
+For CoPilot CLI assistance with using DirectX Tool Kit, try:
+
+```bash
+winget install GitHub.Copilot
+winget install GitHub.cli
+gh skill install microsoft/directxtk
+copilot
+/skills list
+```
 
 ## Notices
 
@@ -78,7 +94,18 @@ FOR SECURITY ADVISORIES, see [GitHub](https://github.com/microsoft/DirectXTK/sec
 
 For a full change history, see [CHANGELOG.md](https://github.com/microsoft/DirectXTK/blob/main/CHANGELOG.md).
 
+* clang-format use for this project must match the version use by GitHub Super-Linter to pass the validation. VS 2022 and VS 2026 come with different versions, so to match use:
+
+```cmd
+winget install --id=LLVM.LLVM --version 21.1.2
+powershell -File build/Format.ps1 -LLVM
+```
+
+* The _directxtk_desktop_win10_ and _directxtk_uwp_ NuGet packages are deprecated. The best way to integrate the latest DirectX Tool Kit into your C++ project is using [vcpkg](https://github.com/microsoft/vcpkg/tree/master/ports/directxtk).
+
 * The CMake projects require 3.21 or later.
+
+* Starting with the July 2026 release, support for Direct3D Hardware Feature Level 9.x has been retired. All shaders are built using Shader Model 4, and therefore require `D3D_FEATURE_LEVEL_10_0` or greater.
 
 * Starting with the March 2025 release, Windows 7 and Windows 8.0 support has been retired. For _DirectX ToolKit for Audio_ this means that `DirectXTKAudio_Desktop_*_Win7` has been removed, and `DirectXTKAudio_Desktop_*_Win8` has been integrated into the `DirectXTK_Desktop_*` vcxproj which uses XAudio 2.8 for Windows 8.1 compatibility.
 
@@ -150,6 +177,8 @@ Thanks to Roberto Sonnino for his help with the ``CMO``, DGSL rendering, and the
 
 Thanks to Pete Lewis and Justin Saunders for the normal-mapped and PBR shaders implementation.
 
-Thanks to Andrew Farrier and Scott Matloff for their on-going help with code reviews.
-
 Thanks to Imre Eilertsen for creating winget ports for the command-line tools.
+
+Thanks to Andrew Farrier, Jon Martin, and Scott Matloff for their help with code reviews.
+
+Thanks to Shawn Hargreaves and Nada Ouf for their continued support for this library.

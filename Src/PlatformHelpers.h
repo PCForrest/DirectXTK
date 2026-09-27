@@ -17,13 +17,12 @@
 #include <cstdio>
 #include <exception>
 #include <memory>
+#include <string>
 
 #ifndef MAKEFOURCC
-#define MAKEFOURCC(ch0, ch1, ch2, ch3) \
-                (static_cast<uint32_t>(static_cast<uint8_t>(ch0)) \
-                | (static_cast<uint32_t>(static_cast<uint8_t>(ch1)) << 8) \
-                | (static_cast<uint32_t>(static_cast<uint8_t>(ch2)) << 16) \
-                | (static_cast<uint32_t>(static_cast<uint8_t>(ch3)) << 24))
+#define MAKEFOURCC(ch0, ch1, ch2, ch3)                                                                          \
+    (static_cast<uint32_t>(static_cast<uint8_t>(ch0)) | (static_cast<uint32_t>(static_cast<uint8_t>(ch1)) << 8) \
+        | (static_cast<uint32_t>(static_cast<uint8_t>(ch2)) << 16) | (static_cast<uint32_t>(static_cast<uint8_t>(ch3)) << 24))
 #endif /* defined(MAKEFOURCC) */
 
 // See https://walbourn.github.io/modern-c++-bitmask-types/
@@ -41,19 +40,21 @@ namespace DirectX
     class com_exception : public std::exception
     {
     public:
-        com_exception(HRESULT hr) noexcept : result(hr) {}
-
-        const char* what() const noexcept override
+        explicit com_exception(HRESULT hr)
+            : result(hr)
         {
-            static char s_str[64] = {};
-            sprintf_s(s_str, "Failure with HRESULT of %08X", static_cast<unsigned int>(result));
-            return s_str;
+            char str[64] = {};
+            sprintf_s(str, "Failure with HRESULT of %08X", static_cast<unsigned int>(result));
+            message = str;
         }
+
+        const char* what() const noexcept override { return message.c_str(); }
 
         HRESULT get_result() const noexcept { return result; }
 
     private:
-        HRESULT result;
+        HRESULT     result;
+        std::string message;
     };
 
     // Helper utility converts D3D API failures into exceptions.
@@ -65,11 +66,10 @@ namespace DirectX
         }
     }
 
-
     // Helper for output debug tracing
     inline void DebugTrace(_In_z_ _Printf_format_string_ const char* format, ...) noexcept
     {
-    #ifdef _DEBUG
+#ifdef _DEBUG
         va_list args;
         va_start(args, format);
 
@@ -77,19 +77,37 @@ namespace DirectX
         vsprintf_s(buff, format, args);
         OutputDebugStringA(buff);
         va_end(args);
-    #else
+#else
         UNREFERENCED_PARAMETER(format);
-    #endif
+#endif
     }
 
     // Helper smart-pointers
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10) || (defined(_XBOX_ONE) && defined(_TITLE)) || !defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
-    struct virtual_deleter { void operator()(void* p) noexcept { if (p) VirtualFree(p, 0, MEM_RELEASE); } };
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10) || (defined(_XBOX_ONE) && defined(_TITLE)) || !defined(WINAPI_FAMILY) \
+    || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
+    struct virtual_deleter
+    {
+        void operator()(void* p) noexcept
+        {
+            if (p)
+                VirtualFree(p, 0, MEM_RELEASE);
+        }
+    };
 #endif
 
-    struct handle_closer { void operator()(HANDLE h) noexcept { if (h) CloseHandle(h); } };
+    struct handle_closer
+    {
+        void operator()(HANDLE h) noexcept
+        {
+            if (h)
+                CloseHandle(h);
+        }
+    };
 
     using ScopedHandle = std::unique_ptr<void, handle_closer>;
 
-    inline HANDLE safe_handle(HANDLE h) noexcept { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
-}
+    inline HANDLE safe_handle(HANDLE h) noexcept
+    {
+        return (h == INVALID_HANDLE_VALUE) ? nullptr : h;
+    }
+} // namespace DirectX

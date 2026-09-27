@@ -206,6 +206,9 @@
     <None Include="Src\Shaders\DebugEffect.fx">
       <Filter>Src\Shaders</Filter>
     </None>
+    <None Include="Src\Shaders\NPREffect.fx">
+      <Filter>Src\Shaders</Filter>
+    </None>
     <None Include="Src\Shaders\PixelPacking_Velocity.hlsli">
       <Filter>Src\Shaders\Shared</Filter>
     </None>
@@ -347,6 +350,9 @@
     <ClCompile Include="Src\DebugEffect.cpp">
       <Filter>Src</Filter>
     </ClCompile>
+    <ClCompile Include="Src\NPREffect.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
     <ClCompile Include="Src\PBREffectFactory.cpp">
       <Filter>Src</Filter>
     </ClCompile>
@@ -357,6 +363,9 @@
       <Filter>Src</Filter>
     </ClCompile>
     <ClCompile Include="Src\DirectXHelpers.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\NPREffectFactory.cpp">
       <Filter>Src</Filter>
     </ClCompile>
   </ItemGroup>
