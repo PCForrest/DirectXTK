@@ -217,6 +217,8 @@
     <ClCompile Include="Src\ModelLoadSDKMESH.cpp" />
     <ClCompile Include="Src\ModelLoadVBO.cpp" />
     <ClCompile Include="Src\Mouse.cpp" />
+    <ClCompile Include="Src\NPREffect.cpp" />
+    <ClCompile Include="Src\NPREffectFactory.cpp" />
     <ClCompile Include="Src\NormalMapEffect.cpp" />
     <ClCompile Include="Src\PBREffect.cpp" />
     <ClCompile Include="Src\PBREffectFactory.cpp" />
@@ -247,6 +249,7 @@
     <None Include="Src\Shaders\DualTextureEffect.fx" />
     <None Include="Src\Shaders\EnvironmentMapEffect.fx" />
     <None Include="Src\Shaders\Lighting.fxh" />
+    <None Include="Src\Shaders\NPREffect.fx" />
     <None Include="Src\Shaders\NormalMapEffect.fx" />
     <None Include="Src\Shaders\PBRCommon.fxh" />
     <None Include="Src\Shaders\PBREffect.fx" />

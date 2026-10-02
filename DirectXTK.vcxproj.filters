@@ -245,6 +245,12 @@
     <ClCompile Include="Src\Mouse.cpp">
       <Filter>Src\Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Src\NPREffect.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\NPREffectFactory.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
     <ClCompile Include="Src\NormalMapEffect.cpp">
       <Filter>Src</Filter>
     </ClCompile>
@@ -322,6 +328,9 @@
     </None>
     <None Include="Src\Shaders\Lighting.fxh">
       <Filter>Src\Shaders\Shared</Filter>
+    </None>
+    <None Include="Src\Shaders\NPREffect.fx">
+      <Filter>Src\Shaders</Filter>
     </None>
     <None Include="Src\Shaders\NormalMapEffect.fx">
       <Filter>Src\Shaders</Filter>
